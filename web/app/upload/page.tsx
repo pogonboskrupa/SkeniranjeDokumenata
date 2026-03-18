@@ -3,11 +3,17 @@
 import { useRef, useState } from 'react';
 import { uploadDocument } from '@/lib/api';
 
+interface UploadItem {
+  filename: string;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  error?: string;
+  id?: string;
+}
+
 export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploaded, setUploaded] = useState<string[]>([]);
+  const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -36,49 +42,53 @@ export default function UploadPage() {
 
   async function handleFiles(files: FileList) {
     setError(null);
-    setUploading(true);
 
-    try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        try {
-          const result = await uploadDocument(file);
-          return { filename: file.name, id: result.documentId };
-        } catch (err) {
-          throw new Error(
-            `${file.name}: ${err instanceof Error ? err.message : 'Upload failed'}`
-          );
-        }
-      });
+    // Create upload items
+    const items: UploadItem[] = Array.from(files).map((file) => ({
+      filename: file.name,
+      status: 'pending',
+    }));
+    setUploadItems((prev) => [...prev, ...items]);
 
-      const results = await Promise.allSettled(uploadPromises);
+    // Upload each file
+    const fileArray = Array.from(files);
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      const itemIndex = uploadItems.length + i;
 
-      const newUploaded: string[] = [];
-      const errors: string[] = [];
+      try {
+        setUploadItems((prev) => {
+          const updated = [...prev];
+          updated[itemIndex] = { ...updated[itemIndex], status: 'uploading' };
+          return updated;
+        });
 
-      results.forEach((result) => {
-        if (result.status === 'fulfilled') {
-          newUploaded.push(
-            `✓ ${result.value.filename} (ID: ${result.value.id})`
-          );
-        } else {
-          errors.push(result.reason.message);
-        }
-      });
+        const result = await uploadDocument(file);
 
-      setUploaded((prev) => [...prev, ...newUploaded]);
-
-      if (errors.length > 0) {
-        setError(errors.join('\n'));
+        setUploadItems((prev) => {
+          const updated = [...prev];
+          updated[itemIndex] = {
+            ...updated[itemIndex],
+            status: 'success',
+            id: result.documentId,
+          };
+          return updated;
+        });
+      } catch (err) {
+        setUploadItems((prev) => {
+          const updated = [...prev];
+          updated[itemIndex] = {
+            ...updated[itemIndex],
+            status: 'error',
+            error: err instanceof Error ? err.message : 'Upload failed',
+          };
+          return updated;
+        });
       }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'An unexpected error occurred'
-      );
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   }
 
@@ -114,10 +124,10 @@ export default function UploadPage() {
           <p className="text-gray-600 mb-6">or</p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
+            disabled={uploadItems.some(item => item.status === 'uploading' || item.status === 'pending')}
             className="button-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {uploading ? 'Uploading...' : 'Select Files'}
+            {uploadItems.some(item => item.status === 'uploading') ? 'Uploading...' : 'Select Files'}
           </button>
 
           <p className="text-sm text-gray-500 mt-4">
@@ -128,26 +138,49 @@ export default function UploadPage() {
         {/* Error Messages */}
         {error && (
           <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-            <p className="font-semibold mb-2">Upload errors:</p>
-            <pre className="text-sm whitespace-pre-wrap break-words">
-              {error}
-            </pre>
+            <p className="font-semibold mb-2">Error:</p>
+            <p>{error}</p>
           </div>
         )}
 
-        {/* Success Messages */}
-        {uploaded.length > 0 && (
-          <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="font-semibold text-green-800 mb-3">
-              Successfully uploaded {uploaded.length} document(s):
-            </p>
-            <ul className="space-y-1">
-              {uploaded.map((msg, idx) => (
-                <li key={idx} className="text-sm text-green-700">
-                  {msg}
-                </li>
+        {/* Upload Progress */}
+        {uploadItems.length > 0 && (
+          <div className="mt-6 bg-white rounded-lg shadow p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Upload Progress</h3>
+            <div className="space-y-3">
+              {uploadItems.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{item.filename}</p>
+                    {item.error && (
+                      <p className="text-xs text-red-600 mt-1">{item.error}</p>
+                    )}
+                  </div>
+                  <div className="ml-4">
+                    {item.status === 'pending' && (
+                      <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">
+                        Pending
+                      </span>
+                    )}
+                    {item.status === 'uploading' && (
+                      <span className="text-xs px-2 py-1 bg-yellow-200 text-yellow-700 rounded">
+                        ⏳ Uploading...
+                      </span>
+                    )}
+                    {item.status === 'success' && (
+                      <span className="text-xs px-2 py-1 bg-green-200 text-green-700 rounded">
+                        ✓ Complete
+                      </span>
+                    )}
+                    {item.status === 'error' && (
+                      <span className="text-xs px-2 py-1 bg-red-200 text-red-700 rounded">
+                        ✗ Failed
+                      </span>
+                    )}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
               ℹ️ Documents are being processed. Check the dashboard for progress.
             </div>

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { config } from '../config.js';
-import { DocumentMetadata, DocumentType } from '../types/index.js';
+import { DocumentMetadata } from '../types/index.js';
 
 export function generateDocumentId(): string {
   return randomUUID();

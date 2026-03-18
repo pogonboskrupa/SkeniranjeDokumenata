@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import Tesseract from 'tesseract.js';
+// @ts-ignore - no types available for pdf-parse
 import pdfParse from 'pdf-parse';
-import { config } from '../config.js';
 import { OCRResult } from '../types/index.js';
 
 export async function extractTextFromPDF(filePath: string): Promise<OCRResult> {

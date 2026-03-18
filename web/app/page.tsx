@@ -17,27 +17,45 @@ export default function Dashboard() {
   const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  async function loadData() {
+    try {
+      const isInitial = loading;
+      if (!isInitial) setRefreshing(true);
+
+      const [docsRes, statsRes] = await Promise.all([
+        getDocuments(10, 0),
+        getStats(),
+      ]);
+      setDocuments(docsRes.documents);
+      setStats(statsRes);
+      setLastUpdate(new Date());
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const [docsRes, statsRes] = await Promise.all([
-          getDocuments(10, 0),
-          getStats(),
-        ]);
-        setDocuments(docsRes.documents);
-        setStats(statsRes);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      loadData();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
 
   const formatFileSize = (bytes: number): string => {
     const units = ['B', 'KB', 'MB', 'GB'];
@@ -76,7 +94,35 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          {lastUpdate && (
+            <p className="text-sm text-gray-500 mt-2">
+              Last updated: {lastUpdate.toLocaleTimeString()}
+            </p>
+          )}
+        </div>
+        <div className="space-x-2">
+          <button
+            onClick={loadData}
+            disabled={refreshing}
+            className={`button-secondary ${refreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {refreshing ? '🔄 Updating...' : '🔄 Refresh'}
+          </button>
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              autoRefresh
+                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+            }`}
+          >
+            {autoRefresh ? '✓ Auto-refresh' : 'Auto-refresh OFF'}
+          </button>
+        </div>
+      </div>
 
       {/* Statistics */}
       {stats && (

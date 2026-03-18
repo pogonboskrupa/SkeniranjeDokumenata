@@ -97,3 +97,13 @@ export async function getStats(): Promise<{
 export function getDocumentDownloadUrl(id: string): string {
   return `${API_URL}/documents/${id}/file`;
 }
+
+export async function batchDeleteDocuments(ids: string[]): Promise<{ deleted: number; total: number; errors?: string[] }> {
+  const response = await fetch(`${API_URL}/documents/batch/delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  if (!response.ok) throw new Error('Failed to delete documents');
+  return response.json();
+}

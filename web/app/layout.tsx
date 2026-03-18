@@ -22,7 +22,7 @@ export default function RootLayout({
               <p className="text-sm text-gray-400 mt-1">Document Management</p>
             </div>
 
-            <div className="space-y-2 px-4">
+            <div className="space-y-1 px-4">
               <a
                 href="/"
                 className="block px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
@@ -46,6 +46,30 @@ export default function RootLayout({
                 className="block px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
               >
                 📁 All Documents
+              </a>
+
+              <div className="border-t border-gray-700 my-2"></div>
+
+              <a
+                href="/statistics"
+                className="block px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
+              >
+                📈 Statistics
+              </a>
+              <a
+                href="/batch"
+                className="block px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
+              >
+                ⚙️ Batch Operations
+              </a>
+
+              <div className="border-t border-gray-700 my-2"></div>
+
+              <a
+                href="/settings"
+                className="block px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
+              >
+                ⚙️ Settings
               </a>
             </div>
           </nav>
