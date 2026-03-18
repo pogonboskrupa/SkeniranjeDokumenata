@@ -86,71 +86,171 @@ The first time OCR runs, Tesseract.js will download language packs. For offline 
 - English (eng) - default
 - Bosnian (bos) - available if installed
 
-## Running the System
+## Running the Application
 
-### Option A: Development Mode (Recommended)
+### Quick Start
 
-**Terminal 1 - Backend API Server**:
 ```bash
-API_PORT=5000 npm run api
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env and set: ANTHROPIC_API_KEY=sk-ant-...
+
+# 3. Start folder watcher (monitors ~/scans)
+npm run watch
+
+# 4. In another terminal, start API server
+npm run api
 ```
 
-**Terminal 2 - Folder Watcher**:
+The system will now:
+- Monitor `~/scans` folder for new documents
+- Automatically OCR and classify incoming files
+- Organize documents into `/data/sorted/{year}/{month}/{recipient}/`
+- Index all documents for full-text search
+
+### Using the System
+
+#### Upload Documents
 ```bash
-ANTHROPIC_API_KEY=sk-ant-... npm run watch
+# Copy documents to watch folder
+cp invoice.pdf ~/scans/
+
+# Or use API directly
+curl -X POST http://localhost:5000/api/upload \
+  -H "x-filename: invoice.pdf" \
+  --data-binary @invoice.pdf
 ```
 
-**Terminal 3 - Frontend Development Server**:
+#### Search Documents
 ```bash
-cd web
-npm run dev
+curl -X POST http://localhost:5000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "invoice",
+    "documentType": "invoice",
+    "dateFrom": "2025-01-01"
+  }'
 ```
 
-Access the web UI at: **http://localhost:3000**
-
-### Option B: Build and Run
-
+#### List Documents
 ```bash
-# Build backend
-npm run build
-
-# Run API server
-API_PORT=5000 node dist/api/server.js
-
-# Run watcher in another terminal
-node dist/ingestion/watcher.js
+curl http://localhost:5000/api/documents?limit=10
 ```
 
-## Usage
-
-### 1. Upload Documents
-
-1. Go to **http://localhost:3000/upload**
-2. Drag and drop documents or click to select files
-3. Supported formats: PDF, JPG, PNG, TIFF
-
-### 2. Automatic Processing
-
-- Documents are queued with concurrency=2 (configurable)
-- Each document: OCR → Classification → Storage
-- Processing time: 5-15 seconds per document (varies by size)
-
-### 3. Search Documents
-
-1. Go to **http://localhost:3000/search**
-2. Search by:
-   - Keywords (OCR text + metadata)
-   - Document type (invoice, contract, letter, etc.)
-   - Date range
-   - Recipient name
-3. Results ranked by relevance
-
-### 4. Folder Watching
-
-Copy documents to `~/scans` (or `SCAN_WATCH_DIR`):
+#### View Statistics
 ```bash
-cp ~/Downloads/invoice.pdf ~/scans/
-# Document automatically detected and processed
+curl http://localhost:5000/api/stats
+```
+
+#### Delete Document
+```bash
+curl -X DELETE http://localhost:5000/api/documents/{document-id}
+```
+
+## Usage Examples
+
+### Automatic Processing via Folder Watch
+
+```bash
+# Documents are automatically processed when placed in watch directory
+cp document1.pdf ~/scans/
+cp document2.jpg ~/scans/
+cp document3.png ~/scans/
+
+# System automatically:
+# 1. Detects new files
+# 2. Extracts text via OCR (Tesseract.js)
+# 3. Classifies with Claude API
+# 4. Organizes into /sorted/{year}/{month}/{recipient}/
+# 5. Indexes in SQLite FTS5 database
+```
+
+### Manual Upload via API
+
+```bash
+# Single document
+curl -X POST http://localhost:5000/api/upload \
+  -H "x-filename: contract.pdf" \
+  --data-binary @contract.pdf
+
+# Response:
+# {
+#   "documentId": "550e8400-e29b-41d4-a716-446655440000",
+#   "status": "pending",
+#   "message": "Document uploaded and queued for processing"
+# }
+```
+
+### Search Examples
+
+```bash
+# Full-text search
+curl -X POST http://localhost:5000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"text": "invoice 2025"}'
+
+# Filter by document type
+curl -X POST http://localhost:5000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "documentType": "invoice",
+    "dateFrom": "2025-01-01",
+    "dateTo": "2025-03-18"
+  }'
+
+# Filter by recipient
+curl -X POST http://localhost:5000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"recipient": "john@example.com"}'
+```
+
+### Batch Operations
+
+```bash
+# Delete multiple documents
+curl -X POST http://localhost:5000/api/documents/batch/delete \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ids": ["id1", "id2", "id3"]
+  }'
+
+# Response:
+# {
+#   "deleted": 3,
+#   "total": 3,
+#   "errors": null
+# }
+```
+
+### Monitor Progress
+
+```bash
+# Check system statistics
+curl http://localhost:5000/api/stats
+
+# Response:
+# {
+#   "totalDocuments": 1250,
+#   "completed": 1200,
+#   "pending": 30,
+#   "failed": 20,
+#   "totalSize": 5368709120,
+#   "byType": {
+#     "invoice": 450,
+#     "contract": 200,
+#     "letter": 300,
+#     "form": 150,
+#     "report": 100,
+#     "other": 50
+#   },
+#   "recentDays": {
+#     "today": 45,
+#     "thisWeek": 180
+#   }
+# }
 ```
 
 ## Project Structure
@@ -331,28 +431,61 @@ Full-text search index on: filename, OCR text, recipient, summary, keywords
 
 ## Development
 
-### Adding a New Page
-1. Create file: `web/app/path/page.tsx`
-2. Import components and API functions
-3. Use `'use client'` for interactive features
-
 ### Adding API Endpoints
 1. Add route handler in `src/api/server.ts`
 2. Update types in `src/types/index.ts`
-3. Test with curl or Postman
+3. Test with curl:
+   ```bash
+   curl -X GET http://localhost:5000/api/your-endpoint
+   ```
 
 ### Extending OCR
 1. Add language packs in `src/ocr/extract.ts`
 2. Load in `extractWithTesseract()` function
 3. Requires language pack files (~5-10MB each)
+   ```typescript
+   await worker.loadLanguage('fra'); // Add French
+   await worker.initialize('fra');
+   ```
+
+### Modifying Classification
+1. Edit `src/classifier/classify.ts`
+2. Adjust Claude API prompt or add regex patterns
+3. Test with sample documents
+
+### Build & Test
+```bash
+# Compile TypeScript
+npm run build
+
+# Run tests
+npm test
+
+# Check with sample file
+curl -X POST http://localhost:5000/api/upload \
+  -H "x-filename: test.pdf" \
+  --data-binary @test.pdf
+```
 
 ## Limitations & Future Work
 
-- No multi-user authentication
+- No multi-user authentication (all API requests open)
 - No Google Drive sync (optional module not implemented)
-- No advanced analytics dashboard
+- No CLI command-line tool (use curl for API calls)
 - Document text search limited to first 1000 chars
 - No export/reporting features
+- No webhook notifications for completed documents
+
+## Roadmap
+
+- [ ] CLI wrapper (`docSort` command) for common operations
+- [ ] WebSocket support for real-time status updates
+- [ ] Multi-user authentication & permissions
+- [ ] Webhook notifications
+- [ ] Document versioning
+- [ ] Advanced export (PDF, CSV, JSON)
+- [ ] Scheduled batch processing
+- [ ] Integration with cloud storage (Google Drive, OneDrive)
 
 ## License
 
