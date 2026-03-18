@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DocSort Scanner</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f5f5f5;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      header {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 20px;
+      }
+
+      .sidebar {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .section {
+        margin-bottom: 20px;
+      }
+
+      .section h2 {
+        font-size: 16px;
+        margin-bottom: 10px;
+        color: #555;
+        text-transform: uppercase;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 10px;
+      }
+
+      button {
+        background: #2196f3;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        width: 100%;
+        margin-bottom: 10px;
+        transition: background 0.3s;
+      }
+
+      button:hover {
+        background: #1976d2;
+      }
+
+      button.secondary {
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      button.secondary:hover {
+        background: #e0e0e0;
+      }
+
+      button.danger {
+        background: #f44336;
+      }
+
+      button.danger:hover {
+        background: #d32f2f;
+      }
+
+      .folder-display {
+        background: #f9f9f9;
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        font-family: monospace;
+        font-size: 12px;
+        word-break: break-all;
+      }
+
+      .google-accounts {
+        list-style: none;
+      }
+
+      .google-accounts li {
+        padding: 8px 10px;
+        background: #f0f7ff;
+        border-left: 3px solid #2196f3;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .google-accounts button {
+        background: #f44336;
+        padding: 5px 10px;
+        font-size: 12px;
+        width: auto;
+        margin: 0;
+      }
+
+      .document-list {
+        max-height: 500px;
+        overflow-y: auto;
+      }
+
+      .document-item {
+        padding: 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        background: #fafafa;
+      }
+
+      .document-name {
+        font-weight: 500;
+        margin-bottom: 5px;
+      }
+
+      .document-meta {
+        font-size: 12px;
+        color: #999;
+        margin-bottom: 8px;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 500;
+      }
+
+      .status-processing {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .status-completed {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status-error {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .share-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      input[type='checkbox'] {
+        margin-right: 8px;
+        cursor: pointer;
+      }
+
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        background: #f9f9f9;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-bottom: 5px;
+      }
+
+      .checkbox-label:hover {
+        background: #f0f0f0;
+      }
+
+      #root {
+        width: 100%;
+      }
+
+      @media (max-width: 768px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

@@ -9,16 +9,32 @@
     "watch": "tsc -w & node dist/ingestion/watcher.js",
     "api": "node dist/api/server.js",
     "dev": "concurrently \"tsc -w\" \"node --enable-source-maps dist/api/server.js\"",
+    "electron": "electron electron/main.js",
+    "electron-dev": "concurrently \"npm run api\" \"sleep 2 && npm run electron\"",
+    "electron-build": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["document", "management", "ocr", "ai", "classification"],
+  "keywords": [
+    "document",
+    "management",
+    "ocr",
+    "ai",
+    "classification"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.28.0",
     "better-sqlite3": "^11.8.1",
     "chokidar": "^3.6.0",
+    "dotenv": "^17.3.1",
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1",
+    "electron-store": "^11.0.2",
     "express": "^4.21.2",
+    "google-auth-library": "^10.6.2",
+    "googleapis": "^171.4.0",
+    "open": "^11.0.0",
     "p-queue": "^8.1.0",
     "pdf-parse": "^1.1.1",
     "tesseract.js": "^4.1.1"
